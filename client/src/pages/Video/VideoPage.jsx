@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { videos } from "../../data/mockData";
-import LiveBadge from "../../components/LiveBadge";
 import VideoCard from "../../components/VideoCard";
 import LiveChat from "../../components/LiveChat";
 import { Download, Share, ThumbsUp } from "lucide-react";
