@@ -3,7 +3,6 @@ import { WebSocketServer, WebSocket } from "ws";
 import url from "url";
 import { v4 as uuidv4 } from "uuid";
 import { configDotenv } from "dotenv";
-
 import connectDB from "./database/index.js";
 
 configDotenv({

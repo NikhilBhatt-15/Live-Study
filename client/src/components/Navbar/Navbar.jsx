@@ -1,9 +1,30 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Video, Bell } from "lucide-react";
+import { getCurrentUser } from "../../api/auth";
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await getCurrentUser();
+        if (response.status === 200) {
+          setUser(response.data.data);
+          // console.log("User data:", response.data.data);
+          setIsLoggedIn(true);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    fetchUser();
+  }, [isLoggedIn]);
+
+  // console.log(user);
 
   return (
     <header style={styles.header}>
@@ -37,20 +58,29 @@ const Navbar = () => {
               </Link>
               <Bell />
               <Link to="/profile">
-                <div style={styles.avatar}>TE</div>
+                <div style={styles.avatar}>
+                  <img
+                    src={user.avatarUrl}
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      borderRadius: "50%",
+                    }}
+                  />
+                </div>
               </Link>
             </>
           ) : (
             <>
               <button
                 style={styles.outlineButton}
-                onClick={() => setIsLoggedIn(true)}
+                onClick={() => navigate("/login")}
               >
                 Sign In
               </button>
               <button
                 style={styles.primaryButton}
-                onClick={() => setIsLoggedIn(true)}
+                onClick={() => navigate("/signup")}
               >
                 Create Account
               </button>
@@ -160,16 +190,12 @@ const styles = {
     cursor: "pointer",
   },
   avatar: {
-    height: "32px",
-    width: "32px",
+    height: "40px",
+    width: "40px",
     borderRadius: "50%",
-    backgroundColor: "#1d4ed8",
-    color: "#ffffff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "14px",
-    fontWeight: "bold",
   },
 };
 

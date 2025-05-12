@@ -1,57 +1,42 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signup } from "../../api/auth.js";
+import { login } from "../../api/auth.js";
 
-const Signup = () => {
+const Login = () => {
   const navigate = useNavigate();
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(""); // General error
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({
     email: "",
     password: "",
-    name: "",
   });
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    name: "",
-    avatar: null,
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    // Clear field error for this field
-    if (fieldErrors[e.target.name]) {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    if (fieldErrors[name]) {
       setFieldErrors((prev) => ({
         ...prev,
-        [e.target.name]: "",
+        [name]: "",
       }));
     }
-    // Clear general error
     if (error) setError("");
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData({ ...formData, avatar: file });
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setAvatarPreview(event.target?.result);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newErrors = {};
-    if (!formData.name) newErrors.name = "Name is required";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.password) newErrors.password = "Password is required";
 
@@ -60,50 +45,86 @@ const Signup = () => {
       return;
     }
 
-    setIsLoading(true);
-    setError("");
+    setIsLoading(true); // Start loading
+
     try {
-      const res = await signup(formData);
-      if (res.status === 201) {
-        navigate("/login");
+      const response = await login(formData);
+      setIsLoading(false); // End loading
+      if (response.status === 200) {
+        navigate("/");
       } else {
-        setError(res.data?.message || "Signup failed. Please try again.");
+        setError("Invalid credentials. Please try again.");
       }
     } catch (err) {
-      setError(
+      setIsLoading(false); // End loading
+      console.error("Login error:", err);
+      const message =
         err.response?.data?.message ||
-          err.message ||
-          "An error occurred. Please try again."
-      );
-    } finally {
-      setIsLoading(false);
+        "Something went wrong. Please try again.";
+      setError(message);
     }
   };
 
   return (
     <div style={styles.outerContainer}>
       <div className="heroContainer" style={styles.heroContainer}>
+        {/* Hero SVG illustration */}
         <div style={styles.heroImage}>
-          {/* SVG Illustration */}
-          <img
-            src="https://res.cloudinary.com/dnv6ajx3b/image/upload/v1747053314/mhjzads2ec2s0hyvaefv.png"
-            alt="Signup Illustration"
-            style={styles.heroImage}
-          />
+          <svg
+            width="350"
+            height="350"
+            viewBox="0 0 350 350"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="350" height="350" rx="32" fill="#F1F5F9" />
+            <ellipse cx="175" cy="190" rx="120" ry="90" fill="#E0E7FF" />
+            <rect x="80" y="130" width="190" height="110" rx="18" fill="#fff" />
+            <rect
+              x="100"
+              y="150"
+              width="150"
+              height="16"
+              rx="8"
+              fill="#DBEAFE"
+            />
+            <rect
+              x="100"
+              y="180"
+              width="110"
+              height="12"
+              rx="6"
+              fill="#DBEAFE"
+            />
+            <rect
+              x="100"
+              y="200"
+              width="70"
+              height="12"
+              rx="6"
+              fill="#DBEAFE"
+            />
+            <circle cx="120" cy="230" r="14" fill="#A7F3D0" />
+            <circle cx="175" cy="230" r="14" fill="#FDE68A" />
+            <circle cx="230" cy="230" r="14" fill="#FCA5A5" />
+            <ellipse cx="175" cy="110" rx="30" ry="30" fill="#818CF8" />
+            <ellipse cx="175" cy="110" rx="20" ry="20" fill="#C7D2FE" />
+            <ellipse cx="175" cy="110" rx="10" ry="10" fill="#fff" />
+          </svg>
         </div>
         <h1 style={styles.heroTitle}>TeachStreaming</h1>
         <p style={styles.heroSubtitle}>
-          Create your free account.
+          Empower your teaching.
           <br />
-          Start teaching live today!
+          Go live. Engage the world.
         </p>
       </div>
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <h2 style={styles.cardTitle}>Create an account</h2>
+            <h2 style={styles.cardTitle}>Welcome back</h2>
             <p style={styles.cardDescription}>
-              Enter your information to create an account
+              Enter your credentials to access your account
             </p>
           </div>
           {isLoading && (
@@ -119,58 +140,6 @@ const Signup = () => {
             }}
           >
             <div style={styles.cardContent}>
-              <div style={styles.avatarContainer}>
-                <div style={styles.avatar}>
-                  {avatarPreview ? (
-                    <img
-                      src={avatarPreview}
-                      alt="Profile"
-                      style={styles.avatarImage}
-                    />
-                  ) : (
-                    <div style={styles.avatarFallback}>
-                      {formData.name
-                        ? formData.name.charAt(0).toUpperCase()
-                        : "?"}
-                    </div>
-                  )}
-                </div>
-                <input
-                  id="avatar"
-                  name="avatar"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={styles.fileInput}
-                  disabled={isLoading}
-                />
-                <label htmlFor="avatar" style={styles.uploadButton}>
-                  Upload
-                </label>
-              </div>
-              <div style={styles.inputGroup}>
-                <label htmlFor="name" style={styles.label}>
-                  Name
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  placeholder="John Doe"
-                  style={{
-                    ...styles.input,
-                    borderColor: fieldErrors.name ? "#ef4444" : "#cbd5e1",
-                    boxShadow: fieldErrors.name
-                      ? "0 0 0 2px rgba(239,68,68,0.15)"
-                      : "0 0 0 2px rgba(37,99,235,0.08)",
-                  }}
-                  value={formData.name}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-                {fieldErrors.name && (
-                  <p style={styles.errorText}>{fieldErrors.name}</p>
-                )}
-              </div>
               <div style={styles.inputGroup}>
                 <label htmlFor="email" style={styles.label}>
                   Email
@@ -199,22 +168,33 @@ const Signup = () => {
                 <label htmlFor="password" style={styles.label}>
                   Password
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  style={{
-                    ...styles.input,
-                    borderColor: fieldErrors.password ? "#ef4444" : "#cbd5e1",
-                    boxShadow: fieldErrors.password
-                      ? "0 0 0 2px rgba(239,68,68,0.15)"
-                      : "0 0 0 2px rgba(37,99,235,0.08)",
-                  }}
-                  value={formData.password}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
+                <div style={styles.passwordContainer}>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    style={{
+                      ...styles.input,
+                      borderColor: fieldErrors.password ? "#ef4444" : "#cbd5e1",
+                      boxShadow: fieldErrors.password
+                        ? "0 0 0 2px rgba(239,68,68,0.15)"
+                        : "0 0 0 2px rgba(37,99,235,0.08)",
+                    }}
+                    value={formData.password}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    style={styles.showPasswordButton}
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
                 {fieldErrors.password && (
                   <p style={styles.errorText}>{fieldErrors.password}</p>
                 )}
@@ -229,24 +209,19 @@ const Signup = () => {
               <button
                 type="submit"
                 style={styles.submitButton}
-                disabled={
-                  !formData.email ||
-                  !formData.password ||
-                  !formData.name ||
-                  isLoading
-                }
+                disabled={!formData.email || !formData.password || isLoading}
               >
-                {isLoading ? "Creating..." : "Create Account"}
+                {isLoading ? "Signing In..." : "Sign In"}
               </button>
               <p style={styles.toggleText}>
-                Already have an account?{" "}
+                Don't have an account?{" "}
                 <button
                   type="button"
                   style={styles.toggleButton}
-                  onClick={() => navigate("/login")}
+                  onClick={() => navigate("/signup")}
                   disabled={isLoading}
                 >
-                  Sign in
+                  Sign up
                 </button>
               </p>
             </div>
@@ -329,7 +304,7 @@ const styles = {
     boxShadow: "0 8px 32px rgba(31, 41, 55, 0.15)",
     padding: "32px 28px",
     transition: "box-shadow 0.2s",
-    position: "relative",
+    position: "relative", // for loading overlay
     overflow: "hidden",
   },
   cardHeader: {
@@ -372,58 +347,31 @@ const styles = {
     boxSizing: "border-box",
     marginBottom: "2px",
   },
+  passwordContainer: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+  },
+  showPasswordButton: {
+    position: "absolute",
+    right: "10px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    background: "none",
+    border: "none",
+    color: "#64748b",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "0.95rem",
+    padding: "0 4px",
+    transition: "color 0.2s",
+  },
   errorText: {
     color: "#ef4444",
     fontSize: "0.92rem",
     marginTop: "6px",
     transition: "opacity 0.3s",
     minHeight: "18px",
-  },
-  avatarContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    marginBottom: "16px",
-  },
-  avatar: {
-    width: "96px",
-    height: "96px",
-    borderRadius: "50%",
-    overflow: "hidden",
-    backgroundColor: "#e5e7eb",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "32px",
-    fontWeight: "bold",
-    color: "#374151",
-    marginBottom: "8px",
-    boxShadow: "0 2px 8px rgba(31, 41, 55, 0.08)",
-  },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
-  avatarFallback: {
-    fontSize: "32px",
-    fontWeight: "bold",
-    color: "#374151",
-  },
-  fileInput: {
-    display: "none",
-  },
-  uploadButton: {
-    fontSize: "14px",
-    color: "#2563eb",
-    cursor: "pointer",
-    background: "none",
-    border: "none",
-    padding: 0,
-    marginTop: "2px",
-    fontWeight: "500",
-    textDecoration: "underline",
-    transition: "color 0.2s",
   },
   cardFooter: {
     textAlign: "center",
@@ -484,4 +432,4 @@ const styles = {
   },
 };
 
-export default Signup;
+export default Login;

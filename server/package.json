@@ -12,6 +12,7 @@
     "dev": "nodemon -r dotenv/config index.js"
   },
   "dependencies": {
+    "@eyevinn/hls-duration": "^0.1.1",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.6.1",
     "cookie-parser": "^1.4.7",
