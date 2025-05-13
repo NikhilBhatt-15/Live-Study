@@ -4,6 +4,7 @@ import { ApiError } from "../utils/apiError.js";
 import { Channel } from "../models/channel.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Video } from "../models/video.model.js";
+import { createRoom, destroyRoom } from "../wsServer.js";
 
 async function getHlsDuration(hlsUrl) {
     const res = await fetch(hlsUrl);
@@ -17,7 +18,6 @@ async function getHlsDuration(hlsUrl) {
         : 0;
     return total; // in seconds
 }
-
 const golive = asyncHandler(async (req, res) => {
     const { title, description, tags } = req.body;
     if ([title, description].some((item) => item?.trim() === "")) {
@@ -134,6 +134,7 @@ const endLiveStream = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to update livestream");
     }
     console.log("Livestream ended");
+    destroyRoom(streamKey);
     return res
         .status(200)
         .json(new ApiResponse(200, null, "Livestream ended successfully"));
@@ -173,6 +174,7 @@ const startLiveStream = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to start livestream");
     }
     console.log("Livestream started");
+    createRoom(streamKey);
     return res
         .status(200)
         .json(new ApiResponse(200, null, "Livestream started successfully"));
@@ -247,10 +249,54 @@ const getOnGoingLiveStream = asyncHandler(async (req, res) => {
     );
 });
 
+const getallOngoingLiveStream = asyncHandler(async (req, res) => {
+    const livestreams = await Livestream.find({
+        isEnded: false,
+        islive: true,
+    }).populate("channelId", "name avatarUrl");
+    if (!livestreams) {
+        return res
+            .status(404)
+            .json(new ApiResponse(404, null, "No ongoing livestream found"));
+    }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                livestreams,
+                "Ongoing Livestream fetched successfully"
+            )
+        );
+});
+const getLiveStreamById = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const livestream = await Livestream.findById(id).populate(
+        "channelId",
+        "name avatarUrl"
+    );
+    if (!livestream) {
+        return res
+            .status(404)
+            .json(new ApiResponse(404, null, "No ongoing livestream found"));
+    }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                livestream,
+                "Ongoing Livestream fetched successfully"
+            )
+        );
+});
+
 export {
     golive,
     endLiveStream,
     startLiveStream,
     getLiveStream,
     getOnGoingLiveStream,
+    getallOngoingLiveStream,
+    getLiveStreamById,
 };
