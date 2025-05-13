@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../api/auth.js";
-
+import { useAuth } from "../../context/AuthContext.jsx";
 const Login = () => {
+  const { setUser, user } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -51,6 +52,9 @@ const Login = () => {
       const response = await login(formData);
       setIsLoading(false); // End loading
       if (response.status === 200) {
+        setUser(response.data.data.user);
+        localStorage.setItem("token", response.data.user.accessToken);
+        localStorage.setItem("user", JSON.stringify(response.data.data.user));
         navigate("/");
       } else {
         setError("Invalid credentials. Please try again.");
@@ -64,6 +68,11 @@ const Login = () => {
       setError(message);
     }
   };
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  });
 
   return (
     <div style={styles.outerContainer}>

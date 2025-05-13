@@ -1,30 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Video, Bell } from "lucide-react";
-import { getCurrentUser } from "../../api/auth";
+import { useAuth } from "../../context/AuthContext"; // <-- import your context
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await getCurrentUser();
-        if (response.status === 200) {
-          setUser(response.data.data);
-          // console.log("User data:", response.data.data);
-          setIsLoggedIn(true);
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-
-    fetchUser();
-  }, [isLoggedIn]);
-
-  // console.log(user);
+  const { user, logout } = useAuth(); // <-- use context
 
   return (
     <header style={styles.header}>
@@ -51,7 +32,7 @@ const Navbar = () => {
 
         {/* User Actions */}
         <div style={styles.userActions}>
-          {isLoggedIn ? (
+          {user ? (
             <>
               <Link to="/dashboard">
                 <button style={styles.outlineButton}>Creator Studio</button>
@@ -64,11 +45,15 @@ const Navbar = () => {
                     style={{
                       height: "100%",
                       width: "100%",
-                      borderRadius: "50%",
+                      objectFit: "cover",
                     }}
+                    alt="Avatar"
                   />
                 </div>
               </Link>
+              <button style={styles.outlineButton} onClick={logout}>
+                Logout
+              </button>
             </>
           ) : (
             <>
@@ -190,12 +175,12 @@ const styles = {
     cursor: "pointer",
   },
   avatar: {
-    height: "40px",
+    flexShrink: 0,
     width: "40px",
+    height: "40px",
     borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: "#e5e7eb",
   },
 };
 

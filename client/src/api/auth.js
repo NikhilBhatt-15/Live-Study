@@ -42,3 +42,10 @@ export const getCurrentUser = async () => {
 export const golive = async (data) => {
   return await api.post("/users/live", data);
 };
+
+export const getLiveStreams = async () => {
+  return await api.get("/users/live");
+};
+export const getLiveStream = async (id) => {
+  return await api.get(`/users/live/${id}`);
+};

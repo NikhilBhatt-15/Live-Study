@@ -1,15 +1,31 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { videos, categories } from "../../data/mockData.js";
 import CategoryFilter from "../../components/CategoryFilter.jsx";
 import VideoCard from "../../components/VideoCard.jsx";
-
+import { getLiveStreams } from "../../api/auth.js";
 const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState(1); // Default to "All"
-
+  const [liveStreams, setLiveStreams] = useState([]);
   // Filter videos based on selected category (for demo, we just show all videos)
   const filteredVideos =
     selectedCategory === 7 ? videos.filter((video) => video.isLive) : videos;
 
+  useEffect(() => {
+    const fetchLiveStreams = async () => {
+      try {
+        const response = await getLiveStreams();
+        if (response.status === 200) {
+          setLiveStreams(response.data.data);
+        } else {
+          console.error("Failed to fetch live streams");
+        }
+      } catch (error) {
+        console.error("Error fetching live streams:", error);
+      }
+    };
+    fetchLiveStreams();
+  }, []);
+  console.log(liveStreams);
   return (
     <div style={styles.container}>
       {/* Category Filter */}
@@ -35,15 +51,31 @@ const HomePage = () => {
       )}
 
       {/* Live Now Section */}
-      {selectedCategory !== 7 && videos.some((video) => video.isLive) && (
+      {liveStreams.length !== 0 && (
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>Live Now</h2>
           <div style={styles.grid}>
-            {videos
-              .filter((video) => video.isLive)
-              .map((video) => (
-                <VideoCard key={video.id} {...video} />
-              ))}
+            {liveStreams.map((video) => {
+              return (
+                <VideoCard
+                  key={video._id}
+                  id={video.streamKey}
+                  title={video.title}
+                  thumbnail={video.thumbnailUrl}
+                  views={300}
+                  postedAt={video.startedAt}
+                  creator={
+                    video.channelId
+                      ? {
+                          name: video.channelId.name,
+                          avatar: video.channelId.avatarUrl,
+                        }
+                      : { name: "Unknown", avatar: "" }
+                  }
+                  isLive={true}
+                />
+              );
+            })}
           </div>
         </div>
       )}

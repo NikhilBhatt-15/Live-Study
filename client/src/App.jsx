@@ -6,8 +6,9 @@ import VideoPage from "./pages/Video/VideoPage.jsx";
 import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import Login from "./pages/Signup/Login.jsx";
 import Signup from "./pages/Signup/Signup.jsx";
-//                     alt="Avatar Preview"
+import { AuthProvider } from "./context/AuthContext.jsx";
 
+import PrivateRoute from "./components/PrivateRoute.jsx";
 function App() {
   const location = useLocation();
 
@@ -16,14 +17,20 @@ function App() {
 
   return (
     <>
-      {/* Conditionally render Navbar */}
       {!hideNavbarRoutes.includes(location.pathname) && <Navbar />}
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/video/:id" element={<VideoPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </>
   );
@@ -32,7 +39,9 @@ function App() {
 export default function RootApp() {
   return (
     <BrowserRouter>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

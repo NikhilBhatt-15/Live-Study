@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import { Video, Play, Upload, Tags, Copy } from "lucide-react";
-import { golive, getCurrentUser } from "../../api/auth.js"; // Your real API call
+import { golive } from "../../api/auth.js";
 import { videos } from "../../data/mockData.js"; // Replace with real video data
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 function Dashboard() {
-  // UI state
-  const navigate = useNavigate();
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
   const [showStreamInfoModal, setShowStreamInfoModal] = useState(false);
-  const [user, setUser] = useState(null);
   // Live stream state
   const [isLive, setIsLive] = useState(false);
   const [streamStarted, setStreamStarted] = useState(false);
@@ -22,19 +18,6 @@ function Dashboard() {
   });
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await getCurrentUser();
-        if (response.status === 200) {
-          setUser(response.data.data);
-        } else {
-          navigate("/login");
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        navigate("/login");
-      }
-    };
     const fetchliveStream = async () => {
       try {
         const response = await axios.get(
@@ -56,7 +39,6 @@ function Dashboard() {
         console.error("Error fetching stream status:", error);
       }
     };
-    fetchUser();
     fetchliveStream();
   }, []);
   // Copy feedback

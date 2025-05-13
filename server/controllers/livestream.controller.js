@@ -180,7 +180,7 @@ const startLiveStream = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, null, "Livestream started successfully"));
 });
 
-const getLiveStream = asyncHandler(async (req, res) => {
+const getLiveStreamStatus = asyncHandler(async (req, res) => {
     const { streamKey } = req.body;
     if (!streamKey) {
         throw new ApiError(400, "Please provide stream key");
@@ -295,7 +295,7 @@ export {
     golive,
     endLiveStream,
     startLiveStream,
-    getLiveStream,
+    getLiveStreamStatus,
     getOnGoingLiveStream,
     getallOngoingLiveStream,
     getLiveStreamById,

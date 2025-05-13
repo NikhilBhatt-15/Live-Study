@@ -21,7 +21,7 @@ const VideoPage = () => {
         <div style={styles.videoSection}>
           <div style={styles.videoPlayer}>
             <iframe
-              src="https://www.livereacting.com/tools/hls-player-embed?url=http%3A%2F%2Flocalhost%3A8080%2Fhls%2Fnight%2Findex.m3u8"
+              src={`https://www.livereacting.com/tools/hls-player-embed?url=http%3A%2F%2Flocalhost%3A8080%2Fhls%2F${id}%2Findex.m3u8`}
               width="100%"
               height="100%"
               frameBorder="0"
