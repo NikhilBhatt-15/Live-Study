@@ -54,8 +54,6 @@ export const setupWebSocketServer = (server) => {
             // Verify JWT
             const payload = jwt.verify(token, process.env.JWT_SECRET);
             const user = await User.findById(payload.id);
-            if (!user) return ws.close();
-
             // Validate livestream
             const livestream = await Livestream.findOne({ streamKey: roomId });
             if (!livestream || livestream.isEnded || !livestream.isLive) {
@@ -73,11 +71,16 @@ export const setupWebSocketServer = (server) => {
             // Message handler
             ws.on("message", async (data) => {
                 try {
-                    const message = JSON.parse(data.toString());
-                    if (!message.content?.trim()) return;
+                    if (ws.user) {
+                        const message = JSON.parse(data.toString());
+                        if (!message.content?.trim()) return;
 
-                    const chatMessage = formatMessage(ws.user, message.content);
-                    broadcastMessage(roomId, chatMessage);
+                        const chatMessage = formatMessage(
+                            ws.user,
+                            message.content
+                        );
+                        broadcastMessage(roomId, chatMessage);
+                    }
                 } catch (err) {
                     console.error("Message processing error:", err);
                 }

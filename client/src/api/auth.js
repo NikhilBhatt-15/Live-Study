@@ -46,6 +46,45 @@ export const golive = async (data) => {
 export const getLiveStreams = async () => {
   return await api.get("/users/live");
 };
-export const getLiveStream = async (id) => {
+export const getLiveStreamById = async (id) => {
   return await api.get(`/users/live/${id}`);
+};
+
+export const getVideos = async () => {
+  return await api.get("/videos");
+};
+
+export const getVideoById = async (id) => {
+  return await api.get(`/videos/${id}`);
+};
+
+export const getChannelInfo = async (id) => {
+  return await api.get(`channels/info/${id}`);
+};
+export const isSubscribed = async (id) => {
+  return await api.get(`channels/isSubscribed/${id}`);
+};
+export const getChannelVideos = async (id) => {
+  return await api.get(`channels/videos/${id}`);
+};
+export const subscribeToChannel = async (id) => {
+  return await api.post(`/channels/subscribe/${id}`);
+};
+export const unsubscribeFromChannel = async (id) => {
+  return await api.post(`/channels/unsubscribe/${id}`);
+};
+export const getOwnChannelProfile = async () => {
+  return await api.get("/channels/profile");
+};
+
+export const likeVideo = async (id) => {
+  return await api.post(`/videos/like/${id}`);
+};
+
+export const dislikeVideo = async (id) => {
+  return await api.post(`/videos/dislike/${id}`);
+};
+
+export const isVideoLiked = async (id) => {
+  return await api.get(`/videos/isLiked/${id}`);
 };

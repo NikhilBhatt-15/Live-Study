@@ -23,6 +23,8 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<HomePage />} />
         <Route path="/video/:id" element={<VideoPage />} />
+        <Route path="/video/live/:id" element={<VideoPage />} />
+        {/* Add more routes as needed */}
         <Route
           path="/dashboard"
           element={

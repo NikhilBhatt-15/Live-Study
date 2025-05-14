@@ -37,8 +37,12 @@ app.get("/", (req, res) => {
 
 import userRoutes from "./routes/user.routes.js";
 import livestreamRoutes from "./routes/livestream.routes.js";
+import videoRoutes from "./routes/video.routes.js";
+import channelRoutes from "./routes/channel.routes.js";
 
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/users", livestreamRoutes);
+app.use("/api/v1/videos", videoRoutes);
+app.use("/api/v1/channels", channelRoutes);
 
 export default app;

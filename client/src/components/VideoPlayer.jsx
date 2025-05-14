@@ -1,42 +1,14 @@
-import React, { useEffect, useRef } from "react";
-import Hls from "hls.js";
+import React, { useState } from "react";
+import VideoJS from "./Videojs.jsx";
 
-const VideoPlayer = ({ isLive, streamUrl, videoUrl }) => {
-  const videoRef = useRef(null);
+export default function VideoPlayerWrapper({ isLive, streamUrl, videoUrl }) {
+  const [ended, setEnded] = useState(false);
+  const src = isLive ? streamUrl : videoUrl;
 
-  useEffect(() => {
-    const video = videoRef.current;
+  if (!src) return <div>No video source available.</div>;
 
-    if (isLive && Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(streamUrl);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play();
-      });
+  if (ended)
+    return <div style={{ textAlign: "center", padding: 24 }}>Video Ended</div>;
 
-      return () => {
-        hls.destroy();
-      };
-    } else if (!isLive) {
-      video.src = videoUrl;
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = streamUrl;
-      video.addEventListener("loadedmetadata", () => {
-        video.play();
-      });
-    }
-  }, [isLive, streamUrl, videoUrl]);
-
-  return (
-    <video
-      ref={videoRef}
-      style={{ width: "100%", height: "100%", borderRadius: "8px" }}
-      controls
-      autoPlay
-      muted
-    />
-  );
-};
-
-export default VideoPlayer;
+  return <VideoJS src={src} isLive={isLive} onEnded={() => setEnded(true)} />;
+}

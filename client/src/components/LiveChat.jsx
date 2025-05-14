@@ -73,7 +73,7 @@ const LiveChat = ({ isCollapsed = false, onToggleCollapse }) => {
       <div style={styles.chatHeader}>
         <div style={styles.chatHeaderLeft}>
           <MessageSquare style={styles.icon} />
-          <h3 style={styles.chatTitle}>Live Chat</h3>
+          <h3 style={styles.chatTitle}>Live Choooot</h3>
         </div>
         {onToggleCollapse && (
           <button style={styles.hideButton} onClick={onToggleCollapse}>

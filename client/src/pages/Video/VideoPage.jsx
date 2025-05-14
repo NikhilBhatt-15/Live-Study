@@ -1,18 +1,205 @@
-import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { videos } from "../../data/mockData";
 import VideoCard from "../../components/VideoCard";
 import LiveChat from "../../components/LiveChat";
 import { Download, Share, ThumbsUp } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import {
+  getLiveStreamById,
+  getVideoById,
+  getVideos,
+  subscribeToChannel,
+  unsubscribeFromChannel,
+  getChannelInfo,
+  isSubscribed as checkSubscribe,
+  likeVideo,
+  dislikeVideo,
+  isVideoLiked,
+} from "../../api/auth";
+import {
+  formatDate,
+  toLiveReactingEmbedUrl,
+  formatDuration,
+} from "../../utils/utility";
 
 const VideoPage = () => {
+  const { user } = useAuth();
   const { id } = useParams();
-  const videoId = parseInt(id || "1");
-  const video = videos.find((v) => v.id === videoId) || videos[0];
+  const location = useLocation();
+  const isLive = location.pathname.includes("live");
+  const videoId = id;
+
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [video, setVideo] = useState(null);
+  const [relatedVideos, setRelatedVideos] = useState(videos);
+  const [channelinfo, setChannelInfo] = useState(null);
+  const [isLike, setIsLike] = useState(false);
 
-  const relatedVideos = videos.filter((v) => v.id !== videoId).slice(0, 10);
+  const subscribeToChannelhandler = async () => {
+    try {
+      const response = await subscribeToChannel(video.channelId._id);
+      if (response.status === 200) {
+        setIsSubscribed(true);
+      }
+    } catch (error) {
+      console.error("Error subscribing to channel:", error);
+    }
+  };
+  const unsubscribeFromChannelhandler = async () => {
+    try {
+      const response = await unsubscribeFromChannel(video.channelId._id);
+      if (response.status === 200) {
+        setIsSubscribed(false);
+      }
+    } catch (error) {
+      console.error("Error unsubscribing from channel:", error);
+    }
+  };
+  const handleSubscribeClick = () => {
+    if (isSubscribed) {
+      unsubscribeFromChannelhandler();
+    } else {
+      subscribeToChannelhandler();
+    }
+  };
+
+  const likeToVideo = async () => {
+    try {
+      const response = await likeVideo(video._id);
+      if (response.status === 200) {
+        setIsLike(true);
+      }
+    } catch (error) {
+      console.error("Error liking video:", error);
+    }
+  };
+  const dislikeToVideo = async () => {
+    try {
+      const response = await dislikeVideo(video._id);
+      if (response.status === 200) {
+        setIsLike(false);
+      }
+    } catch (error) {
+      console.error("Error disliking video:", error);
+    }
+  };
+  const handleLikeClick = () => {
+    if (isLike) {
+      dislikeToVideo();
+    } else {
+      likeToVideo();
+    }
+    setVideo((prevVideo) => ({
+      ...prevVideo,
+      likes: isLike ? prevVideo.likes - 1 : prevVideo.likes + 1,
+    }));
+  };
+
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      if (!video || !video.channelId) return; // Ensure `video` is loaded before proceeding
+      try {
+        const response = await checkSubscribe(video.channelId._id);
+        if (response.status === 200) {
+          setIsSubscribed(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error checking subscription status:", error);
+        setIsSubscribed(false);
+      }
+    };
+    const checkLikeStatus = async () => {
+      if (!video) return; // Ensure `video` is loaded before proceeding
+      try {
+        const response = await isVideoLiked(video._id);
+        if (response.status === 200) {
+          setIsLike(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error checking like status:", error);
+        setIsLike(false);
+      }
+    };
+    checkLikeStatus();
+    checkSubscriptionStatus();
+  }, [video]); // Run this effect only when `video` changes
+
+  useEffect(() => {
+    const fetchLiveStream = async () => {
+      try {
+        const response = await getLiveStreamById(videoId);
+        if (response.status === 200) {
+          setVideo(response.data.data);
+          setIsVideoLoaded(true);
+        }
+      } catch (error) {
+        setIsVideoLoaded(true);
+      }
+    };
+    const fetchVideo = async () => {
+      try {
+        const response = await getVideoById(videoId);
+        if (response.status === 200) {
+          setVideo(response.data.data);
+          setIsVideoLoaded(true);
+        }
+      } catch (error) {
+        setIsVideoLoaded(true);
+      }
+    };
+    const fetchRelatedVideos = async () => {
+      try {
+        const response = await getVideos();
+        if (response.status === 200) {
+          setRelatedVideos(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching related videos:", error);
+
+        setRelatedVideos([]);
+      }
+    };
+    const fetchChannelInfo = async () => {
+      try {
+        const response = await getChannelInfo(video.channelId._id);
+        if (response.status === 200) {
+          setChannelInfo(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching channel info:", error);
+      }
+    };
+
+    fetchChannelInfo();
+    fetchRelatedVideos();
+    if (isLive) fetchLiveStream();
+    else fetchVideo();
+  }, [videoId, isLive]);
+
+  // Loading state
+  if (!isVideoLoaded) {
+    return <div>Loading...</div>;
+  }
+
+  if (!video) {
+    return <div>Video not found.</div>;
+  }
+
+  // Determine if this is a livestream or a recorded video
+  const isLivestream = isLive;
+
+  // Get creator/channel info
+  const channel = video.channelId || video.creator || {};
+  const avatarUrl = channel.avatarUrl || "";
+  const creatorName = channel.name || "Unknown";
+
+  // Video/stream source
+  const videoSrc = isLivestream
+    ? video.hlsUrl // For livestreams
+    : video.videoUrl; // For recordings
 
   return (
     <div style={styles.container}>
@@ -20,16 +207,18 @@ const VideoPage = () => {
         {/* Video Player Section */}
         <div style={styles.videoSection}>
           <div style={styles.videoPlayer}>
-            <iframe
-              src={`https://www.livereacting.com/tools/hls-player-embed?url=http%3A%2F%2Flocalhost%3A8080%2Fhls%2F${id}%2Findex.m3u8`}
-              width="100%"
-              height="100%"
-              frameBorder="0"
-              allowFullScreen
-              style={{
-                maxWidth: "100%",
-              }}
-            ></iframe>
+            {videoSrc ? (
+              <iframe
+                src={toLiveReactingEmbedUrl(videoSrc)}
+                width="100%"
+                height="100%"
+                frameborder="0"
+                allowfullscreen
+                style={{}}
+              ></iframe>
+            ) : (
+              <div>No video source available.</div>
+            )}
           </div>
 
           {/* Video Info */}
@@ -39,30 +228,66 @@ const VideoPage = () => {
               <div style={styles.creatorInfo}>
                 <div style={styles.avatar}>
                   <img
-                    src={video.creator.avatar}
-                    alt={video.creator.name}
+                    src={avatarUrl}
+                    alt={creatorName}
                     style={styles.avatarImage}
                   />
                 </div>
                 <div>
-                  <h3 style={styles.creatorName}>{video.creator.name}</h3>
-                  <p style={styles.subscribers}>12.5K subscribers</p>
+                  <h3 style={styles.creatorName}>{creatorName}</h3>
+                  <p style={styles.subscribers}>
+                    {channelinfo?.subscribersCount || "13k"} subscribers
+                  </p>
                 </div>
                 <button
                   style={{
                     ...styles.subscribeButton,
                     ...(isSubscribed ? styles.subscribedButton : {}),
                   }}
-                  onClick={() => setIsSubscribed(!isSubscribed)}
+                  onClick={() => {
+                    if (user) {
+                      handleSubscribeClick();
+                    } else {
+                      alert("Please login to subscribe");
+                    }
+                  }}
                 >
                   {isSubscribed ? "Subscribed" : "Subscribe"}
                 </button>
               </div>
-
               <div style={styles.actions}>
-                <button style={styles.actionButton}>
-                  <ThumbsUp style={styles.icon} />
-                  <span>2.4K</span>
+                <button
+                  style={
+                    isLike
+                      ? {
+                          ...styles.actionButton,
+                          backgroundColor: "#219ebc", // genrate a good color
+                          color: "white",
+                        }
+                      : styles.actionButton
+                  }
+                  onClick={() => {
+                    if (user) {
+                      handleLikeClick();
+                    } else {
+                      alert("Please login to like");
+                    }
+                  }}
+                >
+                  <ThumbsUp
+                    style={
+                      isLike
+                        ? {
+                            ...styles.icon,
+                            color: "blue",
+                          }
+                        : {
+                            ...styles.icon,
+                            color: "black",
+                          }
+                    }
+                  />
+                  <span>{video.likes || 0}</span>
                 </button>
                 <button style={styles.actionButton}>
                   <Share style={styles.icon} />
@@ -74,23 +299,20 @@ const VideoPage = () => {
                 </button>
               </div>
             </div>
-
             {/* Video Description */}
             <div style={styles.description}>
               <div style={styles.descriptionMeta}>
-                <span>{video.views} views</span>
+                <span>{video.views || 0} views</span>
                 <span style={styles.dot}>•</span>
-                <span>{video.postedAt}</span>
+                <span>
+                  {isLivestream
+                    ? `Started on ${formatDate(video.startedAt)}`
+                    : `${formatDate(video.publishedAt)}`}
+                </span>
               </div>
-              <p>
-                In this educational session, {video.creator.name} explores{" "}
-                {video.title.toLowerCase()}. This video is part of our
-                comprehensive curriculum designed to help students master the
-                subject through clear explanations and practical examples.
-              </p>
+              <p>{video.description}</p>
             </div>
           </div>
-
           {/* Notes Upload Section */}
           <div style={styles.notesSection}>
             <h2 style={styles.notesTitle}>Lecture Notes</h2>
@@ -105,8 +327,8 @@ const VideoPage = () => {
 
         {/* Related Videos and Chat Section */}
         <div style={styles.sidebar}>
-          {/* Live Chat */}
-          {video.isLive && (
+          {/* Live Chat only for livestreams */}
+          {isLivestream && (
             <div style={styles.liveChatContainer}>
               <LiveChat
                 isCollapsed={isChatCollapsed}
@@ -120,7 +342,24 @@ const VideoPage = () => {
             <h2 style={styles.relatedTitle}>Related Videos</h2>
             <div style={styles.relatedList}>
               {relatedVideos.map((video) => (
-                <VideoCard key={video.id} {...video} />
+                <VideoCard
+                  key={video._id}
+                  id={video._id}
+                  title={video.title}
+                  thumbnail={video.thumbnailUrl}
+                  views={video.views}
+                  postedAt={formatDate(video.createdAt)}
+                  duration={formatDuration(video.duration)}
+                  creator={
+                    video.channelId
+                      ? {
+                          name: video.channelId.name,
+                          avatar: video.channelId.avatarUrl,
+                        }
+                      : { name: "Unknown", avatar: "" }
+                  }
+                  isLive={false}
+                />
               ))}
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Livestream } from "../models/livestream.model.js";
-import { ApiError } from "../utils/apiError.js";
+import { ApiError } from "../utils/ApiError.js";
 import { Channel } from "../models/channel.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Video } from "../models/video.model.js";
@@ -106,6 +106,7 @@ const endLiveStream = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to end livestream");
     }
     const duration = await getHlsDuration(livestream.hlsUrl);
+    console.log("Duration: ", duration);
     const video = await Video.create({
         channelId: livestream.channelId,
         title: livestream.title,

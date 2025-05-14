@@ -2,10 +2,13 @@ import React, { useEffect, useState } from "react";
 import { videos, categories } from "../../data/mockData.js";
 import CategoryFilter from "../../components/CategoryFilter.jsx";
 import VideoCard from "../../components/VideoCard.jsx";
-import { getLiveStreams } from "../../api/auth.js";
+import { getLiveStreams, getVideos } from "../../api/auth.js";
+import { formatDate, formatDuration } from "../../utils/utility.js";
 const HomePage = () => {
   const [selectedCategory, setSelectedCategory] = useState(1); // Default to "All"
   const [liveStreams, setLiveStreams] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   // Filter videos based on selected category (for demo, we just show all videos)
   const filteredVideos =
     selectedCategory === 7 ? videos.filter((video) => video.isLive) : videos;
@@ -23,6 +26,20 @@ const HomePage = () => {
         console.error("Error fetching live streams:", error);
       }
     };
+    const fetchVideos = async () => {
+      try {
+        const response = await getVideos();
+        if (response.status === 200) {
+          setIsVideoLoaded(true);
+          setVideos(response.data.data);
+        } else {
+          console.error("Failed to fetch videos");
+        }
+      } catch (error) {
+        console.error("Error fetching videos:", error);
+      }
+    };
+    fetchVideos();
     fetchLiveStreams();
   }, []);
   console.log(liveStreams);
@@ -63,7 +80,8 @@ const HomePage = () => {
                   title={video.title}
                   thumbnail={video.thumbnailUrl}
                   views={300}
-                  postedAt={video.startedAt}
+                  postedAt={formatDate(video.createdAt)}
+                  duration={formatDuration(video.duration)}
                   creator={
                     video.channelId
                       ? {
@@ -92,8 +110,25 @@ const HomePage = () => {
               } Videos`}
         </h2>
         <div style={styles.grid}>
-          {filteredVideos.map((video) => (
-            <VideoCard key={video.id} {...video} />
+          {videos.map((video) => (
+            <VideoCard
+              key={video._id}
+              id={video._id}
+              title={video.title}
+              thumbnail={video.thumbnailUrl}
+              views={video.views}
+              postedAt={formatDate(video.createdAt)}
+              duration={formatDuration(video.duration)}
+              creator={
+                video.channelId
+                  ? {
+                      name: video.channelId.name,
+                      avatar: video.channelId.avatarUrl,
+                    }
+                  : { name: "Unknown", avatar: "" }
+              }
+              isLive={false}
+            />
           ))}
         </div>
       </div>
