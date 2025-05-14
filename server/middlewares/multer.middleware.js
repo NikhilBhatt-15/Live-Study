@@ -13,3 +13,16 @@ const storage = multer.diskStorage({
 export const upload = multer({
     storage: storage,
 });
+
+const storage2 = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "./public/uploads");
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + "-" + file.originalname);
+    },
+});
+
+export const upload2 = multer({
+    storage: storage2,
+});

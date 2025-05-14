@@ -2,11 +2,11 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Video, Bell } from "lucide-react";
 import { useAuth } from "../../context/AuthContext"; // <-- import your context
-
+import { useSearch } from "../../context/SearchContext"; // <-- import your context
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); // <-- use context
-
+  const { searchQuery, setSearchQuery } = useSearch(); // <-- use context
   return (
     <header style={styles.header}>
       <div style={styles.container}>
@@ -26,6 +26,8 @@ const Navbar = () => {
               type="text"
               placeholder="Search for videos, courses, teachers..."
               style={styles.searchInput}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              value={searchQuery}
             />
           </div>
         </div>

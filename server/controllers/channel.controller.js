@@ -5,6 +5,7 @@ import { Like } from "../models/like.model.js";
 import { Subscription } from "../models/subscription.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
+import { Video } from "../models/video.model.js";
 
 const getOwnChannelProfile = asyncHandler(async (req, res) => {
     const channel = await Channel.findOne({ owner: req.user._id }).populate(
@@ -18,9 +19,9 @@ const getOwnChannelProfile = asyncHandler(async (req, res) => {
         channelId: channel._id,
     }).populate("userId", "-password");
     const subscribersCount = subscribers.length;
-    const videos = await Channel.find({
+    const videos = await Video.find({
         channelId: channel._id,
-    }).populate("channelId");
+    });
     const videosCount = videos.length;
     return res.status(200).json(
         new ApiResponse(
@@ -29,6 +30,7 @@ const getOwnChannelProfile = asyncHandler(async (req, res) => {
                 channel,
                 subscribersCount,
                 videosCount,
+                videos,
             },
             "Channel profile fetched successfully"
         )

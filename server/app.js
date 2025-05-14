@@ -5,16 +5,7 @@ const app = express();
 
 app.use(
     cors({
-        origin: [
-            "http://localhost:5173",
-            "https://livestudy.onrender.com",
-            "https://livestudy-frontend.onrender.com",
-            "rtmp://localhost:1935",
-            "http://localhost:8080",
-            "https://localhost:8080",
-            "*",
-            "https://live-study-ruby.vercel.app",
-        ],
+        origin: true,
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],

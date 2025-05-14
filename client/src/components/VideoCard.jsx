@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import LiveBadge from "./LiveBadge";
 
@@ -12,9 +12,21 @@ const VideoCard = ({
   creator,
   isLive,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <Link to={`/video/${id}`} style={styles.link}>
-      <div style={styles.card}>
+    <Link
+      to={isLive ? `/video/live/${id}` : `/video/${id}`}
+      style={styles.link}
+    >
+      <div
+        style={{
+          ...styles.card,
+          ...(isHovered ? styles.cardHover : {}),
+        }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <div style={styles.thumbnailContainer}>
           <img src={thumbnail} alt={title} style={styles.thumbnail} />
           {isLive ? (
@@ -60,8 +72,15 @@ const styles = {
     borderRadius: "8px",
     overflow: "hidden",
     backgroundColor: "#fff",
-    transition: "box-shadow 0.2s ease-in-out",
+    transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s",
     cursor: "pointer",
+    boxShadow: "0 8px 16px rgba(0, 0, 0, 0.1)",
+  },
+  cardHover: {
+    boxShadow: "0 12px 32px rgba(99, 102, 241, 0.18)", // more prominent shadow
+    transform: "translateY(-4px) scale(1.03)",
+    borderColor: "#6366f1", // highlight border on hover
+    zIndex: 2,
   },
   thumbnailContainer: {
     position: "relative",

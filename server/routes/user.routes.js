@@ -8,6 +8,7 @@ import {
     refreshAccessToken,
     getCurrentUser,
     changeAvatar,
+    getProfile,
 } from "../controllers/user.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 const router = Router();
@@ -19,5 +20,6 @@ router.post("/refresh-token", refreshAccessToken);
 router.post("/forgot-password", forgotPassword);
 router.get("/me", verifyJwt, getCurrentUser);
 router.post("/change-avatar", upload.single("avatar"), verifyJwt, changeAvatar);
+router.get("/profile", verifyJwt, getProfile);
 
 export default router;

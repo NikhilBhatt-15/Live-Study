@@ -1,62 +1,42 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MessageSquare } from "lucide-react";
 import ChatMessage from "./ChatMessage";
+import { useAuth } from "../context/AuthContext"; // Assumes you have this
 
-const LiveChat = ({ isCollapsed = false, onToggleCollapse }) => {
+const LiveChat = ({ roomId, isCollapsed = false, onToggleCollapse }) => {
+  const { user } = useAuth(); // token is JWT if logged in
+  // token is in localStorage
+  const token = localStorage.getItem("token");
   const [newMessage, setNewMessage] = useState("");
-  const [messages, setMessages] = useState([
-    {
-      username: "Professor Smith",
-      message: "Welcome to today's session on Advanced Mathematics!",
-      timestamp: "2:30 PM",
-      isTeacher: true,
-      avatar: "https://i.pravatar.cc/150?img=68",
-    },
-    {
-      username: "John",
-      message:
-        "Hi Professor! Looking forward to learning about differential equations.",
-      timestamp: "2:31 PM",
-      avatar: "https://i.pravatar.cc/150?img=33",
-    },
-    {
-      username: "Emma",
-      message: "Could you explain the practical applications of today's topic?",
-      timestamp: "2:32 PM",
-      avatar: "https://i.pravatar.cc/150?img=23",
-    },
-    {
-      username: "Professor Smith",
-      message:
-        "Great question Emma! We'll cover that in the second half of today's lecture.",
-      timestamp: "2:33 PM",
-      isTeacher: true,
-      avatar: "https://i.pravatar.cc/150?img=68",
-    },
-    {
-      username: "Alex",
-      message: "Is this going to be on the exam?",
-      timestamp: "2:34 PM",
-      avatar: "https://i.pravatar.cc/150?img=57",
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
+  const wsRef = useRef(null);
+
+  // Connect to WebSocket on mount
+  useEffect(() => {
+    // Build ws URL with or without token
+    const wsUrl =
+      token?.length > 0
+        ? `ws://localhost:8000?roomId=${roomId}&token=${token}`
+        : `ws://localhost:8000?roomId=${roomId}`;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.error) return; // Optionally handle error
+      setMessages((prev) => [...prev, msg]);
+    };
+
+    // Optionally: fetch initial chat history from REST API here
+
+    return () => ws.close();
+  }, [roomId, token]);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (newMessage.trim()) {
-      const newChatMessage = {
-        username: "You",
-        message: newMessage,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        avatar: "https://i.pravatar.cc/150?img=11",
-      };
-
-      setMessages([...messages, newChatMessage]);
-      setNewMessage("");
-    }
+    if (!user || !newMessage.trim()) return;
+    wsRef.current.send(JSON.stringify({ content: newMessage }));
+    setNewMessage("");
   };
 
   if (isCollapsed) {
@@ -73,7 +53,7 @@ const LiveChat = ({ isCollapsed = false, onToggleCollapse }) => {
       <div style={styles.chatHeader}>
         <div style={styles.chatHeaderLeft}>
           <MessageSquare style={styles.icon} />
-          <h3 style={styles.chatTitle}>Live Choooot</h3>
+          <h3 style={styles.chatTitle}>Live Chat</h3>
         </div>
         {onToggleCollapse && (
           <button style={styles.hideButton} onClick={onToggleCollapse}>
@@ -92,17 +72,28 @@ const LiveChat = ({ isCollapsed = false, onToggleCollapse }) => {
         <input
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type a message..."
+          placeholder={user ? "Type a message..." : "Login to chat"}
           style={styles.input}
+          disabled={!user}
         />
-        <button type="submit" style={styles.sendButton}>
+        <button
+          type="submit"
+          style={styles.sendButton}
+          disabled={!user || !newMessage.trim()}
+        >
           Send
         </button>
       </form>
+      {!user && (
+        <div style={{ color: "#ef4444", textAlign: "center", marginTop: 8 }}>
+          Please log in to send messages.
+        </div>
+      )}
     </div>
   );
 };
 
+// ...styles unchanged
 const styles = {
   collapseButton: {
     display: "flex",
@@ -179,5 +170,4 @@ const styles = {
     cursor: "pointer",
   },
 };
-
 export default LiveChat;

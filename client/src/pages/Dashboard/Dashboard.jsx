@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
 import { Video, Play, Upload, Tags, Copy } from "lucide-react";
 import { golive } from "../../api/auth.js";
-import { videos } from "../../data/mockData.js"; // Replace with real video data
+
 import axios from "axios";
+import { getChannelProfile, uploadVideo } from "../../api/auth.js";
+import { formatDate, formatDuration } from "../../utils/utility.js"; // Import your date formatting function
 function Dashboard() {
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
   const [showStreamInfoModal, setShowStreamInfoModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadForm, setUploadForm] = useState({
+    title: "",
+    description: "",
+    file: null,
+  });
+  const [uploading, setUploading] = useState(false);
   // Live stream state
   const [isLive, setIsLive] = useState(false);
   const [streamStarted, setStreamStarted] = useState(false);
@@ -16,7 +25,8 @@ function Dashboard() {
     description: "",
     tags: "",
   });
-
+  const [channelInfo, setChannelInfo] = useState({});
+  const [channelVideos, setChannelVideos] = useState([]);
   useEffect(() => {
     const fetchliveStream = async () => {
       try {
@@ -39,8 +49,24 @@ function Dashboard() {
         console.error("Error fetching stream status:", error);
       }
     };
+    const fetchChannelProfile = async () => {
+      try {
+        const response = await getChannelProfile();
+        if (response.status === 200) {
+          const data = response.data.data;
+          setChannelInfo(data);
+          setChannelVideos(data.videos);
+        } else {
+          alert("Failed to fetch channel profile");
+        }
+      } catch (error) {
+        console.error("Error fetching channel profile:", error);
+      }
+    };
+    fetchChannelProfile();
     fetchliveStream();
   }, []);
+
   // Copy feedback
   const [copied, setCopied] = useState({ key: false, url: false });
 
@@ -163,8 +189,37 @@ function Dashboard() {
     }, 10000); // Check every 10 seconds
   }
 
-  // Demo videos (replace with real data)
-  const userVideos = videos.slice(0, 3);
+  async function handleUploadVideo() {
+    if (
+      !uploadForm.title.trim() ||
+      !uploadForm.description.trim() ||
+      !uploadForm.file
+    ) {
+      alert("Please fill in all fields.");
+      return;
+    }
+    setUploading(true);
+
+    try {
+      const response = await uploadVideo({
+        title: uploadForm.title,
+        description: uploadForm.description,
+        video: uploadForm.file,
+      });
+      if (response.status === 200) {
+        alert("Video uploaded successfully");
+        setShowUploadModal(false);
+        setUploadForm({ title: "", description: "", file: null });
+      } else {
+        alert("Failed to upload video");
+      }
+    } catch (error) {
+      console.error("Error uploading video:", error);
+      alert("Failed to upload video");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div className="dashboard-root">
@@ -186,13 +241,15 @@ function Dashboard() {
               Go Live
             </button>
           )}
-          <button className="button button-primary">
+          <button
+            className="button button-primary"
+            onClick={() => setShowUploadModal(true)}
+          >
             <Upload size={20} className="icon mr-2" />
             Upload Video
           </button>
         </div>
       </div>
-
       {/* Live Stream Section */}
       {isLive && (
         <div className="card card-live">
@@ -255,7 +312,6 @@ function Dashboard() {
           </div>
         </div>
       )}
-
       {/* Stats */}
       <div className="stats-grid">
         <StatCard
@@ -263,10 +319,13 @@ function Dashboard() {
           value="42.5K"
           desc="+12% from last month"
         />
-        <StatCard label="Subscribers" value="1,240" desc="+85 new this week" />
+        <StatCard
+          label="Subscribers"
+          value={channelInfo.subscribersCount}
+          desc={`+${channelInfo.subscribersCount} Subscribers this week`}
+        />
         <StatCard label="Watch Hours" value="958" desc="Average 4.2 min/view" />
       </div>
-
       {/* Tabs */}
       <div className="tabs-root">
         <div className="tabs-list">
@@ -288,37 +347,39 @@ function Dashboard() {
                   <span className="font-semibold">Your Videos</span>
                 </div>
                 <div className="card-content">
-                  {userVideos.map((video) => (
-                    <div key={video.id} className="video-item">
+                  {channelVideos.map((video) => (
+                    <div key={video._id} className="video-item">
                       <div className="video-thumb">
                         <img
-                          src={video.thumbnail}
+                          src={video.thumbnailUrl}
                           alt={video.title}
                           className="video-thumb-img"
                         />
                         {!video.isLive && (
-                          <div className="video-duration">{video.duration}</div>
+                          <div className="video-duration">
+                            {formatDuration(video.duration)}
+                          </div>
                         )}
                       </div>
                       <div className="video-info">
                         <h3 className="video-title">{video.title}</h3>
                         <p className="video-meta">
-                          {video.views} views • {video.postedAt}
+                          {video.views} views • {formatDate(video.createdAt)}
                         </p>
-                        <div className="video-actions">
+                        {/* <div className="video-actions">
                           <button className="button button-outline button-sm">
                             Edit
                           </button>
                           <button className="button button-outline button-sm">
                             Analytics
                           </button>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   ))}
-                  <button className="button button-outline w-full mt-4">
+                  {/* <button className="button button-outline w-full mt-4">
                     View All Videos
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </>
@@ -326,7 +387,6 @@ function Dashboard() {
           {/* ...Other tabs can be filled in as needed... */}
         </div>
       </div>
-
       {/* Go Live Modal */}
       {showGoLiveModal && (
         <Modal onClose={() => setShowGoLiveModal(false)}>
@@ -384,7 +444,6 @@ function Dashboard() {
           </div>
         </Modal>
       )}
-
       {/* Stream Info Modal */}
       {showStreamInfoModal && (
         <Modal onClose={() => setShowStreamInfoModal(false)}>
@@ -458,7 +517,64 @@ function Dashboard() {
           </div>
         </Modal>
       )}
-
+      {showUploadModal && (
+        <Modal onClose={() => setShowUploadModal(false)}>
+          <div className="modal-content">
+            <h2 className="modal-title">Upload Video</h2>
+            <div className="form-group">
+              <label>Title</label>
+              <input
+                className="input"
+                name="title"
+                value={uploadForm.title}
+                onChange={(e) =>
+                  setUploadForm((f) => ({ ...f, title: e.target.value }))
+                }
+                placeholder="Enter video title"
+              />
+            </div>
+            <div className="form-group">
+              <label>Description</label>
+              <textarea
+                className="input"
+                name="description"
+                value={uploadForm.description}
+                onChange={(e) =>
+                  setUploadForm((f) => ({ ...f, description: e.target.value }))
+                }
+                placeholder="Describe your video"
+              />
+            </div>
+            <div className="form-group">
+              <label>Video File</label>
+              <input
+                className="input"
+                type="file"
+                accept="video/*"
+                onChange={(e) =>
+                  setUploadForm((f) => ({ ...f, file: e.target.files[0] }))
+                }
+              />
+            </div>
+            <div className="modal-actions">
+              <button
+                className="button button-outline"
+                onClick={() => setShowUploadModal(false)}
+                disabled={uploading}
+              >
+                Cancel
+              </button>
+              <button
+                className="button button-primary"
+                onClick={handleUploadVideo}
+                disabled={uploading}
+              >
+                {uploading ? "Uploading..." : "Upload"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {/* Inline CSS */}
       <style>{`
         .dashboard-root { max-width: 900px; margin: 0 auto; padding: 24px; }

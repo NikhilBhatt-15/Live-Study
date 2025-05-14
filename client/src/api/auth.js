@@ -88,3 +88,26 @@ export const dislikeVideo = async (id) => {
 export const isVideoLiked = async (id) => {
   return await api.get(`/videos/isLiked/${id}`);
 };
+
+export const getChannelProfile = async () => {
+  return await api.get(`/channels/profile`);
+};
+
+export const uploadVideo = async ({ video, title, description }) => {
+  if (!video) {
+    throw new Error("Video is required");
+  }
+  const formData = new FormData();
+  formData.append("video", video);
+  formData.append("title", title);
+  formData.append("description", description);
+  return await api.post("/videos/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+export const getUserProfile = async () => {
+  return await api.get("/users/profile");
+};

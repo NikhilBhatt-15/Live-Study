@@ -8,6 +8,7 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Channel } from "../models/channel.model.js";
 import jwt from "jsonwebtoken";
+import { Video } from "../models/video.model.js";
 
 const generateAccessAndRefreshToken = async (user) => {
     try {
@@ -251,7 +252,40 @@ const changeAvatar = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, updateduser, "Avatar updated successfully"));
 });
-
+const getProfile = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select(
+        "-password -refreshToken"
+    );
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+    const channel = await Channel.findOne({ owner: user._id }).select(
+        "-__v -createdAt -updatedAt"
+    );
+    if (!channel) {
+        throw new ApiError(404, "Channel not found");
+    }
+    const subscribers = await Channel.find({
+        owner: user._id,
+    }).populate("owner", "-password");
+    const subscribersCount = subscribers.length;
+    const videos = await Video.find({
+        channelId: channel._id,
+    }).populate("channelId");
+    const videosCount = videos.length;
+    if (!videos) {
+        throw new ApiError(404, "Videos not found");
+    }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                { user, channel, subscribersCount, videosCount },
+                "User profile fetched successfully"
+            )
+        );
+});
 export {
     register,
     login,
@@ -261,4 +295,5 @@ export {
     resetPassword,
     getCurrentUser,
     changeAvatar,
+    getProfile,
 };

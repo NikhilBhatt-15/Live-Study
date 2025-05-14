@@ -6,14 +6,16 @@ import VideoPage from "./pages/Video/VideoPage.jsx";
 import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import Login from "./pages/Signup/Login.jsx";
 import Signup from "./pages/Signup/Signup.jsx";
+import Profile from "./pages/Profile/Profile.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
-
+import { SearchProvider } from "./context/SearchContext.jsx";
 import PrivateRoute from "./components/PrivateRoute.jsx";
+import NotFound from "./pages/OtherPages/NotFound.jsx";
 function App() {
   const location = useLocation();
 
   // Define routes where the Navbar should not be displayed
-  const hideNavbarRoutes = ["/login", "/signup"];
+  const hideNavbarRoutes = ["/login", "/signup", "/profile"];
 
   return (
     <>
@@ -22,8 +24,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<HomePage />} />
-        <Route path="/video/:id" element={<VideoPage />} />
         <Route path="/video/live/:id" element={<VideoPage />} />
+        <Route path="/video/:id" element={<VideoPage />} />
+
         {/* Add more routes as needed */}
         <Route
           path="/dashboard"
@@ -33,6 +36,15 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
@@ -42,7 +54,9 @@ export default function RootApp() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <SearchProvider>
+          <App />
+        </SearchProvider>
       </AuthProvider>
     </BrowserRouter>
   );

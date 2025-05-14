@@ -1,17 +1,33 @@
-import React, { useEffect, useState } from "react";
-import { videos, categories } from "../../data/mockData.js";
+import { useEffect, useState } from "react";
+import { categories } from "../../data/mockData.js";
+import { Search } from "lucide-react"; // Add this import at the top
 import CategoryFilter from "../../components/CategoryFilter.jsx";
 import VideoCard from "../../components/VideoCard.jsx";
 import { getLiveStreams, getVideos } from "../../api/auth.js";
 import { formatDate, formatDuration } from "../../utils/utility.js";
+import { useSearch } from "../../context/SearchContext.jsx";
 const HomePage = () => {
+  const { searchQuery } = useSearch();
+
   const [selectedCategory, setSelectedCategory] = useState(1); // Default to "All"
   const [liveStreams, setLiveStreams] = useState([]);
   const [videos, setVideos] = useState([]);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   // Filter videos based on selected category (for demo, we just show all videos)
+
   const filteredVideos =
-    selectedCategory === 7 ? videos.filter((video) => video.isLive) : videos;
+    searchQuery.length == 0
+      ? []
+      : videos.filter(
+          (video) =>
+            video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            video.description
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            (video.channelId?.name || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase())
+        );
 
   useEffect(() => {
     const fetchLiveStreams = async () => {
@@ -52,17 +68,34 @@ const HomePage = () => {
         onSelectCategory={setSelectedCategory}
       />
 
-      {/* Featured Section */}
-      {selectedCategory === 1 && (
-        <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>Featured Streams</h2>
+      {/* Search Section*/}
+      {filteredVideos.length !== 0 && (
+        <div style={styles.searchSection}>
+          <h2 style={styles.searchSectionTitle}>
+            <Search style={styles.searchIcon} />
+            SearchResult
+          </h2>
           <div style={styles.grid}>
-            {videos
-              .filter((video) => video.isLive)
-              .slice(0, 2)
-              .map((video) => (
-                <VideoCard key={video.id} {...video} />
-              ))}
+            {filteredVideos.map((video) => (
+              <VideoCard
+                key={video._id}
+                id={video._id}
+                title={video.title}
+                thumbnail={video.thumbnailUrl}
+                views={video.views}
+                postedAt={formatDate(video.createdAt)}
+                duration={formatDuration(video.duration)}
+                creator={
+                  video.channelId
+                    ? {
+                        name: video.channelId.name,
+                        avatar: video.channelId.avatarUrl,
+                      }
+                    : { name: "Unknown", avatar: "" }
+                }
+                isLive={false}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -76,7 +109,7 @@ const HomePage = () => {
               return (
                 <VideoCard
                   key={video._id}
-                  id={video.streamKey}
+                  id={video._id}
                   title={video.title}
                   thumbnail={video.thumbnailUrl}
                   views={300}
@@ -137,6 +170,30 @@ const HomePage = () => {
 };
 
 const styles = {
+  searchSection: {
+    marginTop: "32px",
+    background: "linear-gradient(90deg, #e0e7ff 0%, #f3f4f6 100%)",
+    border: "2px solid #6366F1",
+    borderRadius: "12px",
+    boxShadow: "0 2px 16px 0 rgba(99, 102, 241, 0.10)",
+    padding: "24px 16px",
+    marginBottom: "32px",
+    position: "relative",
+  },
+  searchSectionTitle: {
+    fontSize: "22px",
+    fontWeight: "700",
+    color: "#4338ca",
+    marginBottom: "16px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  searchIcon: {
+    color: "#6366F1",
+    width: "22px",
+    height: "22px",
+  },
   container: {
     maxWidth: "1200px",
     margin: "0 auto",

@@ -28,6 +28,7 @@ const VideoPage = () => {
   const { id } = useParams();
   const location = useLocation();
   const isLive = location.pathname.includes("live");
+  console.log("isLive", isLive);
   const videoId = id;
 
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -130,7 +131,7 @@ const VideoPage = () => {
   useEffect(() => {
     const fetchLiveStream = async () => {
       try {
-        const response = await getLiveStreamById(videoId);
+        const response = await getLiveStreamById(id);
         if (response.status === 200) {
           setVideo(response.data.data);
           setIsVideoLoaded(true);
@@ -173,10 +174,10 @@ const VideoPage = () => {
       }
     };
 
-    fetchChannelInfo();
-    fetchRelatedVideos();
     if (isLive) fetchLiveStream();
     else fetchVideo();
+    fetchChannelInfo();
+    fetchRelatedVideos();
   }, [videoId, isLive]);
 
   // Loading state
@@ -331,6 +332,7 @@ const VideoPage = () => {
           {isLivestream && (
             <div style={styles.liveChatContainer}>
               <LiveChat
+                roomId={video.roomId}
                 isCollapsed={isChatCollapsed}
                 onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
               />
@@ -390,6 +392,7 @@ const styles = {
     backgroundColor: "#000",
     borderRadius: "8px",
     overflow: "hidden",
+    boxShadow: "0 8px 16px rgba(63, 13, 13, 0.1)",
   },
   videoInfo: {
     marginTop: "16px",

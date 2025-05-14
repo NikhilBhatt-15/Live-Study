@@ -5,6 +5,7 @@ import { Channel } from "../models/channel.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Video } from "../models/video.model.js";
 import { createRoom, destroyRoom } from "../wsServer.js";
+import { Chatroom } from "../models/chatroom.model.js";
 
 async function getHlsDuration(hlsUrl) {
     const res = await fetch(hlsUrl);
@@ -56,6 +57,12 @@ const golive = asyncHandler(async (req, res) => {
     if (!updatedLivestream) {
         throw new ApiError(500, "Failed to update livestream");
     }
+    const chatroom = await Chatroom.create({
+        streamId: updatedLivestream._id,
+    });
+    if (!chatroom) {
+        throw new ApiError(500, "Failed to create chatroom");
+    }
     return res.status(200).json(
         new ApiResponse(
             200,
@@ -70,6 +77,7 @@ const golive = asyncHandler(async (req, res) => {
                 channelId: updatedLivestream.channelId,
                 channelName: channel.name,
                 channelAvatar: channel.avatarUrl,
+                roomId: chatroom._id,
             },
             "Livestream created successfully"
         )
@@ -106,12 +114,15 @@ const endLiveStream = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to end livestream");
     }
     const duration = await getHlsDuration(livestream.hlsUrl);
+    const colors = ["6366F1", "4F46E5", "3B82F6", "9333EA", "EC4899", "FBBF24"];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const thumbnailUrl = `https://placehold.co/600x400/${randomColor}/FFFFFF/png?text=${livestream.title}`;
     console.log("Duration: ", duration);
     const video = await Video.create({
         channelId: livestream.channelId,
         title: livestream.title,
         description: livestream.description,
-        thumbnailUrl: livestream.thumbnailUrl,
+        thumbnailUrl: thumbnailUrl,
         tags: livestream.tags,
         isPublic: true,
         videoUrl: livestream.hlsUrl,
@@ -135,7 +146,15 @@ const endLiveStream = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to update livestream");
     }
     console.log("Livestream ended");
-    destroyRoom(streamKey);
+    // Destroy the chatroom
+    const chatroom = await Chatroom.findOne({
+        streamId: livestream._id,
+    });
+    if (!chatroom) {
+        throw new ApiError(500, "Failed to find chatroom");
+    }
+    const roomId = chatroom._id;
+    destroyRoom(roomId);
     return res
         .status(200)
         .json(new ApiResponse(200, null, "Livestream ended successfully"));
@@ -174,8 +193,15 @@ const startLiveStream = asyncHandler(async (req, res) => {
     if (!updatedLivestream) {
         throw new ApiError(500, "Failed to start livestream");
     }
+    const chatroom = await Chatroom.findOne({
+        streamId: livestream._id,
+    });
+    if (!chatroom) {
+        throw new ApiError(500, "Failed to create chatroom");
+    }
+    const roomId = chatroom._id;
+    createRoom(chatroom._id);
     console.log("Livestream started");
-    createRoom(streamKey);
     return res
         .status(200)
         .json(new ApiResponse(200, null, "Livestream started successfully"));
@@ -192,6 +218,12 @@ const getLiveStreamStatus = asyncHandler(async (req, res) => {
     if (!livestream) {
         throw new ApiError(404, "Livestream not found");
     }
+    const chatroom = await Chatroom.findOne({
+        streamId: livestream._id,
+    });
+    if (!chatroom) {
+        throw new ApiError(500, "Failed to find chatroom");
+    }
     return res.status(200).json(
         new ApiResponse(
             200,
@@ -206,6 +238,7 @@ const getLiveStreamStatus = asyncHandler(async (req, res) => {
                 channelId: livestream.channelId,
                 isEnded: livestream.isEnded,
                 isLive: livestream.islive,
+                roomId: chatroom._id,
             },
             "Livestream fetched successfully"
         )
@@ -230,6 +263,12 @@ const getOnGoingLiveStream = asyncHandler(async (req, res) => {
             .status(404)
             .json(new ApiResponse(404, null, "No ongoing livestream found"));
     }
+    const chatroom = await Chatroom.findOne({
+        streamId: livestream._id,
+    });
+    if (!chatroom) {
+        throw new ApiError(500, "Failed to find chatroom");
+    }
     return res.status(200).json(
         new ApiResponse(
             200,
@@ -244,6 +283,7 @@ const getOnGoingLiveStream = asyncHandler(async (req, res) => {
                 channelId: livestream.channelId,
                 isEnded: livestream.isEnded,
                 isLive: livestream.islive,
+                roomId: chatroom._id,
             },
             "Ongoing Livestream fetched successfully"
         )
@@ -274,13 +314,20 @@ const getLiveStreamById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const livestream = await Livestream.findById(id).populate(
         "channelId",
-        "name avatarUrl"
+        "name avatarUrl _id"
     );
     if (!livestream) {
         return res
             .status(404)
             .json(new ApiResponse(404, null, "No ongoing livestream found"));
     }
+    const chatroom = await Chatroom.findOne({
+        streamId: livestream._id,
+    });
+    if (!chatroom) {
+        throw new ApiError(500, "Failed to find chatroom");
+    }
+    livestream.roomId = chatroom._id;
     return res
         .status(200)
         .json(
