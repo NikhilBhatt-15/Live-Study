@@ -53,7 +53,7 @@ const Login = () => {
       setIsLoading(false); // End loading
       if (response.status === 200) {
         setUser(response.data.data.user);
-        localStorage.setItem("token", response.data.user.accessToken);
+        localStorage.setItem("token", response.data.data.accessToken);
         localStorage.setItem("user", JSON.stringify(response.data.data.user));
         navigate("/");
       } else {

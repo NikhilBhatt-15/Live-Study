@@ -327,13 +327,16 @@ const getLiveStreamById = asyncHandler(async (req, res) => {
     if (!chatroom) {
         throw new ApiError(500, "Failed to find chatroom");
     }
-    livestream.roomId = chatroom._id;
+    const response = {
+        ...livestream._doc,
+        roomId: chatroom._id,
+    };
     return res
         .status(200)
         .json(
             new ApiResponse(
                 200,
-                livestream,
+                response,
                 "Ongoing Livestream fetched successfully"
             )
         );

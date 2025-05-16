@@ -35,10 +35,15 @@ const LiveChat = ({ roomId, isCollapsed = false, onToggleCollapse }) => {
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!user || !newMessage.trim()) return;
-    wsRef.current.send(JSON.stringify({ content: newMessage }));
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      // Optionally show a warning to the user
+      alert("Chat connection lost. Please refresh or try again.");
+      return;
+    }
+    ws.send(JSON.stringify({ content: newMessage }));
     setNewMessage("");
   };
-
   if (isCollapsed) {
     return (
       <button style={styles.collapseButton} onClick={onToggleCollapse}>

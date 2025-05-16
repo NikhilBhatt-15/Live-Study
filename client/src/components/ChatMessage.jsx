@@ -1,20 +1,23 @@
 import React from "react";
 
 export const ChatMessage = ({
-  username,
-  message,
+  user,
+  content,
   timestamp,
   isTeacher = false,
-  avatar,
 }) => {
   return (
     <div style={styles.messageContainer}>
       <div style={styles.avatar}>
-        {avatar ? (
-          <img src={avatar} alt={username} style={styles.avatarImage} />
+        {user.avatar ? (
+          <img
+            src={user.avatar}
+            alt={user.username}
+            style={styles.avatarImage}
+          />
         ) : (
           <div style={styles.avatarPlaceholder}>
-            {username.charAt(0).toUpperCase()}
+            {user.username.charAt(0).toUpperCase()}
           </div>
         )}
       </div>
@@ -26,17 +29,26 @@ export const ChatMessage = ({
               ...(isTeacher ? styles.teacherUsername : {}),
             }}
           >
-            {username}{" "}
+            {user.username}{" "}
             {isTeacher && <span style={styles.teacherBadge}>Teacher</span>}
           </span>
-          <span style={styles.timestamp}>{timestamp}</span>
+          <span style={styles.timestamp}>{formatDate(timestamp)}</span>
         </div>
-        <p style={styles.messageText}>{message}</p>
+        <p style={styles.messageText}>{content}</p>
       </div>
     </div>
   );
 };
 
+const formatDate = (date) => {
+  // format to minutes ago hourse ago seconds ago
+  const now = new Date();
+  const diff = Math.floor((now - new Date(date)) / 1000);
+  if (diff < 60) return `${diff} seconds ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+  return `${Math.floor(diff / 86400)} days ago`;
+};
 const styles = {
   messageContainer: {
     display: "flex",

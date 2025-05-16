@@ -3,6 +3,7 @@ import url from "url";
 import jwt from "jsonwebtoken";
 import { User } from "./models/user.model.js";
 import { Livestream } from "./models/livestream.model.js";
+import { Chatroom } from "./models/chatroom.model.js";
 
 export const rooms = {}; // { [roomId: string]: Set<WebSocket> }
 
@@ -32,7 +33,17 @@ function broadcastMessage(roomId, message) {
         });
     }
 }
-
+function timestamp() {
+    const date = new Date();
+    return date.toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+    });
+}
 function formatMessage(user, content) {
     return {
         user: {
@@ -42,7 +53,7 @@ function formatMessage(user, content) {
             email: user.email,
         },
         content,
-        timestamp: Date.now(),
+        timestamp: timestamp(),
     };
 }
 
@@ -61,7 +72,10 @@ export const setupWebSocketServer = (server) => {
             let user = null;
             if (token) {
                 try {
-                    const payload = jwt.verify(token, process.env.JWT_SECRET);
+                    const payload = jwt.verify(
+                        token,
+                        process.env.ACCESS_TOKEN_SECRET
+                    );
                     user = await User.findById(payload.id);
                 } catch (err) {
                     console.error("Invalid token:", err);
@@ -70,10 +84,10 @@ export const setupWebSocketServer = (server) => {
             }
 
             // Validate livestream
-            let Chatroom;
+            let myChatroom;
             try {
-                Chatroom = await Livestream.findById(roomId);
-                if (!Chatroom) {
+                myChatroom = await Chatroom.findById(roomId);
+                if (!myChatroom) {
                     console.error("Chatroom not found");
                     return ws.close(); // Invalid livestream ID
                 }
@@ -82,12 +96,20 @@ export const setupWebSocketServer = (server) => {
                 return ws.close();
             }
 
-            let LiveStream;
+            let myLiveStream;
             try {
-                LiveStream = await Livestream.findById(Chatroom.streamId);
-                if (!LiveStream || !LiveStream.isLive || LiveStream.isEnded) {
-                    console.error("Livestream is not active or has ended");
-                    return ws.close();
+                myLiveStream = await Livestream.findById(myChatroom.streamId);
+                if (!myLiveStream) {
+                    console.error("Livestream not found");
+                    return ws.close(); // Invalid livestream ID
+                }
+                if (myLiveStream.isLive === false) {
+                    console.error("Livestream is not live");
+                    return ws.close(); // Livestream is not live
+                }
+                if (myLiveStream.isEnded === true) {
+                    console.error("Livestream is deleted");
+                    return ws.close(); // Livestream is deleted
                 }
             } catch (err) {
                 console.error("Error fetching livestream:", err);
@@ -97,7 +119,8 @@ export const setupWebSocketServer = (server) => {
             // Add to room
             if (!rooms[roomId]) {
                 console.error("Room does not exist");
-                return ws.close();
+                createRoom(roomId);
+                console.log("Creating new room:", roomId);
             }
             rooms[roomId].add(ws);
 
