@@ -41,7 +41,7 @@ const VideoCard = ({
           <div style={styles.contentContainer}>
             <div style={styles.avatar}>
               <img
-                src={creator.avatar}
+                src={creator.avatar || "https://placehold.co/600x400"}
                 alt={creator.name}
                 style={styles.avatarImage}
               />

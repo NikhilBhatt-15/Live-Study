@@ -28,7 +28,6 @@ const VideoPage = () => {
   const { id } = useParams();
   const location = useLocation();
   const isLive = location.pathname.includes("live");
-  console.log("isLive", isLive);
   const videoId = id;
 
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -66,7 +65,6 @@ const VideoPage = () => {
       subscribeToChannelhandler();
     }
   };
-
   const likeToVideo = async () => {
     try {
       const response = await likeVideo(video._id);
@@ -98,86 +96,89 @@ const VideoPage = () => {
       likes: isLike ? prevVideo.likes - 1 : prevVideo.likes + 1,
     }));
   };
+  const fetchRelatedVideos = async () => {
+    try {
+      const response = await getVideos();
+      if (response.status === 200) {
+        setRelatedVideos(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching related videos:", error);
+
+      setRelatedVideos([]);
+    }
+  };
+  const fetchChannelInfo = async () => {
+    try {
+      const response = await getChannelInfo(video.channelId._id);
+      if (response.status === 200) {
+        setChannelInfo(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching channel info:", error);
+    }
+  };
+  const checkSubscriptionStatus = async () => {
+    if (!video || !video.channelId) return; // Ensure `video` is loaded before proceeding
+    try {
+      const response = await checkSubscribe(video.channelId._id);
+      if (response.status === 200) {
+        setIsSubscribed(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+      setIsSubscribed(false);
+    }
+  };
+  const checkLikeStatus = async () => {
+    if (!video) return; // Ensure `video` is loaded before proceeding
+    try {
+      const response = await isVideoLiked(video._id);
+      if (response.status === 200) {
+        setIsLike(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error checking like status:", error);
+      setIsLike(false);
+    }
+  };
+  const fetchLiveStream = async () => {
+    try {
+      const response = await getLiveStreamById(id);
+      if (response.status === 200) {
+        setVideo(response.data.data);
+        setIsVideoLoaded(true);
+      }
+    } catch (error) {
+      setIsVideoLoaded(true);
+    }
+  };
+  const fetchVideo = async () => {
+    try {
+      const response = await getVideoById(videoId);
+      if (response.status === 200) {
+        setVideo(response.data.data);
+        setIsVideoLoaded(true);
+      }
+    } catch (error) {
+      setIsVideoLoaded(true);
+    }
+  };
 
   useEffect(() => {
-    const checkSubscriptionStatus = async () => {
-      if (!video || !video.channelId) return; // Ensure `video` is loaded before proceeding
-      try {
-        const response = await checkSubscribe(video.channelId._id);
-        if (response.status === 200) {
-          setIsSubscribed(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error checking subscription status:", error);
-        setIsSubscribed(false);
-      }
-    };
-    const checkLikeStatus = async () => {
-      if (!video) return; // Ensure `video` is loaded before proceeding
-      try {
-        const response = await isVideoLiked(video._id);
-        if (response.status === 200) {
-          setIsLike(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error checking like status:", error);
-        setIsLike(false);
-      }
-    };
+    if (!video) return; // Ensure `video` is loaded before proceeding
     checkLikeStatus();
+    fetchChannelInfo();
+    fetchRelatedVideos();
     checkSubscriptionStatus();
   }, [video]); // Run this effect only when `video` changes
 
   useEffect(() => {
-    const fetchLiveStream = async () => {
-      try {
-        const response = await getLiveStreamById(id);
-        if (response.status === 200) {
-          setVideo(response.data.data);
-          setIsVideoLoaded(true);
-        }
-      } catch (error) {
-        setIsVideoLoaded(true);
-      }
-    };
-    const fetchVideo = async () => {
-      try {
-        const response = await getVideoById(videoId);
-        if (response.status === 200) {
-          setVideo(response.data.data);
-          setIsVideoLoaded(true);
-        }
-      } catch (error) {
-        setIsVideoLoaded(true);
-      }
-    };
-    const fetchRelatedVideos = async () => {
-      try {
-        const response = await getVideos();
-        if (response.status === 200) {
-          setRelatedVideos(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching related videos:", error);
-
-        setRelatedVideos([]);
-      }
-    };
-    const fetchChannelInfo = async () => {
-      try {
-        const response = await getChannelInfo(video.channelId._id);
-        if (response.status === 200) {
-          setChannelInfo(response.data.data);
-        }
-      } catch (error) {
-        console.error("Error fetching channel info:", error);
-      }
-    };
-
-    if (isLive) fetchLiveStream();
-    else fetchVideo();
-    fetchChannelInfo();
-    fetchRelatedVideos();
+    if (isLive) {
+      fetchLiveStream();
+    } else {
+      fetchVideo();
+    }
   }, [videoId, isLive]);
 
   // Loading state
@@ -213,8 +214,8 @@ const VideoPage = () => {
                 src={toLiveReactingEmbedUrl(videoSrc)}
                 width="100%"
                 height="100%"
-                frameborder="0"
-                allowfullscreen
+                frameBorder="0"
+                allowFullScreen
                 style={{}}
               ></iframe>
             ) : (
@@ -345,7 +346,7 @@ const VideoPage = () => {
             <div style={styles.relatedList}>
               {relatedVideos.map((video) => (
                 <VideoCard
-                  key={video._id}
+                  key={video._id || video.id}
                   id={video._id}
                   title={video.title}
                   thumbnail={video.thumbnailUrl}

@@ -286,6 +286,48 @@ const getProfile = asyncHandler(async (req, res) => {
             )
         );
 });
+
+const updateUser = asyncHandler(async (req, res) => {
+    const { name, email, username, bio } = req.body;
+    if ([name, email, username, bio].some((item) => item?.trim() === "")) {
+        throw new ApiError(400, "Please fill all the fields");
+    }
+    const updateduser = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                name: username,
+                email,
+            },
+        },
+        { new: true }
+    );
+    if (!updateduser) {
+        throw new ApiError(500, "User not found");
+    }
+    const updatedChannel = await Channel.findOneAndUpdate(
+        { owner: req.user._id },
+        {
+            $set: {
+                name,
+                description: bio,
+            },
+        },
+        { new: true }
+    );
+    if (!updatedChannel) {
+        throw new ApiError(500, "Channel not found");
+    }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                { user: updateduser, channel: updatedChannel },
+                "User profile updated successfully"
+            )
+        );
+});
 export {
     register,
     login,
@@ -295,5 +337,6 @@ export {
     resetPassword,
     getCurrentUser,
     changeAvatar,
+    updateUser,
     getProfile,
 };

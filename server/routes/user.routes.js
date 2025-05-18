@@ -9,6 +9,7 @@ import {
     getCurrentUser,
     changeAvatar,
     getProfile,
+    updateUser,
 } from "../controllers/user.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 const router = Router();
@@ -21,5 +22,6 @@ router.post("/forgot-password", forgotPassword);
 router.get("/me", verifyJwt, getCurrentUser);
 router.post("/change-avatar", upload.single("avatar"), verifyJwt, changeAvatar);
 router.get("/profile", verifyJwt, getProfile);
+router.post("/update-profile", verifyJwt, updateUser);
 
 export default router;

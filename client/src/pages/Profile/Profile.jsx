@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getUserProfile } from "../../api/auth";
+import { getUserProfile, updateUserProfile } from "../../api/auth";
 import { useEffect } from "react";
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -14,15 +14,25 @@ const Profile = () => {
   const [channelDescription, setChannelDescription] = useState("");
   const [subscribersCount, setSubscribersCount] = useState(0);
   const [videosCount, setVideosCount] = useState(0);
+  const [username, setUsername] = useState("");
+  const [channelName, setChannelName] = useState("");
 
   const fetchUserProfile = async () => {
     try {
       const response = await getUserProfile();
       if (response.status === 200) {
         setUserProfile(response.data.data.user);
+        setUsername(response.data.data.user.name);
         setChannelDescription(response.data.data.channel.description);
         setSubscribersCount(response.data.data.subscribersCount);
         setVideosCount(response.data.data.videosCount);
+        setChannelName(response.data.data.channel.name);
+        setProfileData({
+          name: response.data.data.channel.name,
+          username: response.data.data.user.name,
+          email: response.data.data.user.email,
+          bio: response.data.data.channel.description,
+        });
       } else {
         console.error("Failed to fetch user profile");
       }
@@ -34,10 +44,23 @@ const Profile = () => {
   useEffect(() => {
     fetchUserProfile();
   }, []);
-  const handleSave = () => {
-    setIsEditing(false);
-    // Typically save the data to a backend
-    console.log("Saving profile data:", profileData);
+  const handleSave = async () => {
+    try {
+      const response = await updateUserProfile({
+        name: profileData.name,
+        username: profileData.username,
+        email: profileData.email,
+        bio: profileData.bio,
+      });
+      if (response.status === 200) {
+        setIsEditing(false);
+        fetchUserProfile();
+      } else {
+        console.error("Failed to update user profile");
+      }
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+    }
   };
 
   return (
@@ -53,12 +76,14 @@ const Profile = () => {
             />
           </div>
           <div style={styles.textCenter}>
-            <h2 style={styles.name}>{userProfile?.name}</h2>
-            <p style={styles.username}>@{userProfile?.name}</p>
+            <h2 style={styles.name}>{username}</h2>
+            <p style={styles.username}>@{channelName}</p>
           </div>
           <button
             style={styles.buttonOutline}
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => {
+              setIsEditing(true);
+            }}
           >
             {isEditing ? "Cancel" : "Edit Profile"}
           </button>
@@ -74,7 +99,7 @@ const Profile = () => {
               {isEditing ? (
                 <>
                   <div style={styles.formGroup}>
-                    <label style={styles.label}>Full Name</label>
+                    <label style={styles.label}>Channel Name</label>
                     <input
                       style={styles.input}
                       value={profileData.name}
@@ -87,7 +112,7 @@ const Profile = () => {
                     <label style={styles.label}>Username</label>
                     <input
                       style={styles.input}
-                      value={userProfile?.username}
+                      value={profileData?.username}
                       onChange={(e) =>
                         setProfileData({
                           ...profileData,
@@ -101,7 +126,7 @@ const Profile = () => {
                     <input
                       style={styles.input}
                       type="email"
-                      value={userProfile?.email}
+                      value={profileData?.email}
                       onChange={(e) =>
                         setProfileData({
                           ...profileData,
@@ -114,7 +139,7 @@ const Profile = () => {
                     <label style={styles.label}>Bio</label>
                     <textarea
                       style={{ ...styles.input, minHeight: 80 }}
-                      value={channelDescription}
+                      value={profileData?.bio}
                       onChange={(e) =>
                         setProfileData({ ...profileData, bio: e.target.value })
                       }
@@ -129,8 +154,8 @@ const Profile = () => {
               ) : (
                 <>
                   <div style={styles.infoRow}>
-                    <span style={styles.infoLabel}>Name:</span>
-                    <span>{userProfile?.name}</span>
+                    <span style={styles.infoLabel}>Channel Name:</span>
+                    <span>{channelName}</span>
                   </div>
                   <div style={styles.infoRow}>
                     <span style={styles.infoLabel}>Username:</span>

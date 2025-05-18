@@ -111,3 +111,8 @@ export const uploadVideo = async ({ video, title, description }) => {
 export const getUserProfile = async () => {
   return await api.get("/users/profile");
 };
+
+export const updateUserProfile = async (data) => {
+  console.log("data", data);
+  return await api.post("/users/update-profile", data);
+};
