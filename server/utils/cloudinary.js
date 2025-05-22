@@ -33,4 +33,21 @@ const deleteFromCloudinary = async (secureUrl) => {
     }
 };
 
+const uploadVideoToCloudinary = async (filePath) => {
+    //    const result = await cloudinary.uploader.upload(filePath, {
+    //        resource_type: "video",
+    //        chunk_size: 6000000,
+    //        eager: [
+    //            {
+    //                transformation: [
+    //                    {
+    //                        width: 640,
+    //                        height: 360,
+    //                        crop: "scale",
+    //                        audio_codec: "none",
+    //                    },
+    //                    {
+    //                        width: 160,
+};
+
 export { uploadOnCloudinary, deleteFromCloudinary };
