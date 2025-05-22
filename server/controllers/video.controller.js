@@ -6,6 +6,22 @@ import { Like } from "../models/like.model.js";
 import { exec } from "child_process";
 import fs from "fs";
 import { Channel } from "../models/channel.model.js";
+
+async function generateThumbnail(videoPath, outputDir) {
+    const thumbnailPath = `${outputDir}/thumbnail.jpg`;
+    const command = `ffmpeg -i "${videoPath}" -ss 00:00:01.000 -vframes 1 "${thumbnailPath}"`;
+    return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error generating thumbnail: ${error}`);
+                reject(error);
+            } else {
+                console.log(`Thumbnail generated: ${thumbnailPath}`);
+                resolve(thumbnailPath);
+            }
+        });
+    });
+}
 async function getHlsDuration(hlsUrl) {
     const res = await fetch(hlsUrl);
     if (!res.ok) throw new Error("Failed to fetch HLS playlist");
@@ -158,9 +174,12 @@ const uploadVideo = asyncHandler(async (req, res) => {
     });
     const hlsUrl = `http://localhost:8000/uploads/${newVideo._id}/index.m3u8`;
 
-    const colors = ["6366F1", "4F46E5", "3B82F6", "9333EA", "EC4899", "FBBF24"];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    const thumbnailUrl = `https://placehold.co/600x400/${randomColor}/FFFFFF/png?text=${title}`;
+    const thumbnailPath = await generateThumbnail(videoPath, outputDir);
+
+    const thumbnailUrl = `http://localhost:8000/uploads/${newVideo._id}/thumbnail.jpg`;
+    if (!thumbnailPath) {
+        throw new ApiError(500, "Thumbnail generation failed");
+    }
     const video = await Video.findByIdAndUpdate(
         newVideo._id,
         {
