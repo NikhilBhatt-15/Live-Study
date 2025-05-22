@@ -3,6 +3,7 @@
 Teachstream is a full-stack web application for live streaming,live chat, video uploads, and interactive learning, designed for educators and learners. The project is organized into two main folders: **client** (frontend) and **server** (backend).
 
 ---
+
 ## Screenshots
 
 > _Below are some screenshots of the Teachstream app interface:_
@@ -15,16 +16,13 @@ Teachstream is a full-stack web application for live streaming,live chat, video 
 
 ![Dashboard](https://github.com/user-attachments/assets/9c7986af-6069-4691-82a6-0162fd672da4)
 
-
 ### Live Stream with Chat
 
 ![LiveStreamPage](https://github.com/user-attachments/assets/463706f9-0cf6-4528-89d9-7894954df097)
 
-
 ### Recommendation Page
 
 ![RecommendationPage](https://github.com/user-attachments/assets/1e805973-b7cf-4a5e-a4ed-9c2f157dc81d)
-
 
 ### Profile Page
 
@@ -35,8 +33,8 @@ Teachstream is a full-stack web application for live streaming,live chat, video 
 ![Creator Dashboard](https://github.com/user-attachments/assets/c4137897-2fa2-4d63-8666-43eb2e503d1f)
 
 ### Video Page
-![image](https://github.com/user-attachments/assets/ba0de432-1001-4532-9b62-4e035927a528)
 
+![image](https://github.com/user-attachments/assets/ba0de432-1001-4532-9b62-4e035927a528)
 
 ## Project Structure
 
@@ -71,6 +69,9 @@ teachstream/
 │   ├── package.json
 │   └── ...
 │
+├── nginx/      # NGINX RTMP server configuration
+│   ├── nginx.conf
+│   └── script.sh
 ├── README.md
 └── ...
 ```
@@ -103,6 +104,73 @@ teachstream/
 
 ---
 
+---
+
+## NGINX RTMP Server Setup
+
+Teachstream uses an **NGINX RTMP server** for live video streaming.  
+The configuration file is located at: `nginx/nginx.conf`.
+
+### Key Features in `nginx/nginx.conf`:
+
+- **RTMP Ingest:** Accepts RTMP streams on port `1935` under the `live` application.
+- **HLS Output:** Streams are converted to HLS and served via HTTP on port `8080` at `/hls`.
+- **Live Event Hooks:**
+  - `on_publish` and `on_publish_done` notify your backend when a stream starts or ends.
+- **FFmpeg Integration:**
+  - The `exec` directive can run a script (e.g., `/files/ff.sh $name`) for further processing.
+
+### Example RTMP Section
+
+```nginx
+rtmp {
+    server {
+        listen 1935;
+        chunk_size 4096;
+
+        application live {
+            live on;
+            record off;
+            interleave on;
+            on_publish http://172.17.16.1:8000/api/v1/users/live/start ; # Backend hook
+            on_publish_done http://172.17.16.1:8000/api/v1/users/live/end ; # Backend hook
+            exec /files/ff.sh $name ;  # Custom script (optional)
+        }
+    }
+}
+```
+
+### Example HTTP Section
+
+```nginx
+http {
+    server {
+        listen 8080;
+
+        location /hls {
+            types {
+                application/vnd.apple.mpegurl m3u8;
+                video/mp2t ts;
+            }
+            root /var/www;
+            add_header Cache-Control no-cache;
+            add_header Access-Control-Allow-Origin *;
+        }
+    }
+}
+```
+
+### Usage
+
+- **RTMP ingest URL:**  
+  `rtmp://<your-server-ip>:1935/live/<stream-key>`
+- **HLS playback URL:**  
+  `http://<your-server-ip>:8080/hls/<stream-key>/index.m3u8`
+
+> _You can edit `nginx/nginx.conf` to match your server paths and backend API URLs as needed._
+
+---
+
 ## Setup Instructions
 
 ### Prerequisites
@@ -111,6 +179,7 @@ teachstream/
 - npm or yarn
 - MongoDB (local or cloud)
 - Cloudinary account (for media uploads)
+- **NGINX with RTMP module** (see `nginx/nginx.conf`)
 
 ---
 
@@ -181,6 +250,11 @@ npm run dev
 cd ../client
 npm run dev
 ```
+
+#### Start the NGINX RTMP server
+
+- Edit `nginx/nginx.conf` as needed.
+- Run NGINX with the RTMP module (or use Docker).
 
 ---
 
