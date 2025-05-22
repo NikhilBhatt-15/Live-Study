@@ -3,6 +3,40 @@
 Teachstream is a full-stack web application for live streaming,live chat, video uploads, and interactive learning, designed for educators and learners. The project is organized into two main folders: **client** (frontend) and **server** (backend).
 
 ---
+## Screenshots
+
+> _Below are some screenshots of the Teachstream app interface:_
+
+### Home Page
+
+![HomePage](https://github.com/user-attachments/assets/7f1630c6-e0cc-48a6-98e1-a3b458ab0de4)
+
+### Creator Dashboard
+
+![Dashboard](https://github.com/user-attachments/assets/9c7986af-6069-4691-82a6-0162fd672da4)
+
+
+### Live Stream with Chat
+
+![LiveStreamPage](https://github.com/user-attachments/assets/463706f9-0cf6-4528-89d9-7894954df097)
+
+
+### Recommendation Page
+
+![RecommendationPage](https://github.com/user-attachments/assets/1e805973-b7cf-4a5e-a4ed-9c2f157dc81d)
+
+
+### Profile Page
+
+![Profile image](https://github.com/user-attachments/assets/56788004-e565-4c6f-a34d-7e36d2d5599c)
+
+### Creator Dashboard
+
+![Creator Dashboard](https://github.com/user-attachments/assets/c4137897-2fa2-4d63-8666-43eb2e503d1f)
+
+### Video Page
+![image](https://github.com/user-attachments/assets/ba0de432-1001-4532-9b62-4e035927a528)
+
 
 ## Project Structure
 
